@@ -1,4 +1,5 @@
-import { LogoutButton } from "@/components/auth/logout-button";
+import { redirect } from "next/navigation";
+import { ProfileForm, type ProfileRow } from "@/components/profile/profile-form";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function OnboardingPage() {
@@ -6,19 +7,27 @@ export default async function OnboardingPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, plan")
-    .eq("id", user!.id)
+    .select("full_name, headline, skills, years_experience, portfolio_links, bio, tone, onboarded")
+    .eq("id", user.id)
     .single();
 
+  // Already set up? Go straight to the generator.
+  if (profile?.onboarded) redirect("/generate");
+
   return (
-    <main className="mx-auto max-w-xl space-y-4 p-8">
-      <h1 className="text-2xl font-bold">Welcome, {profile?.full_name || user?.email} 👋</h1>
-      <p className="text-zinc-500">
-        Profile setup comes here. Signed in as {user?.email} · plan: {profile?.plan}
+    <main className="mx-auto max-w-xl px-4 py-12">
+      <p className="text-sm font-medium text-zinc-500">Step 1 of 1</p>
+      <h1 className="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+        Set up your profile
+      </h1>
+      <p className="mb-8 mt-2 text-sm text-zinc-500">
+        Hookline uses this to make every proposal, cover letter and cold email sound like you.
       </p>
-      <LogoutButton />
+      <ProfileForm intent="onboarding" profile={profile as ProfileRow | null} />
     </main>
   );
 }
